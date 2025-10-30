@@ -1,0 +1,23 @@
+﻿version: '3.9'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-CU12-ubuntu-20.04
+    container_name: pharmaflow-db
+    environment:
+     - ACCEPT_EULA=Y
+     - SA_PASSWORD=Password@123
+    ports: 
+     - "1433:1433"
+    volumes:
+    - pharmaflowdata:/var/opt/mssql
+    networks:
+    - pharmaflownet
+
+volumes:
+  pharmaflowdata:
+  
+networks:
+  pharmaflownet:
+    driver: bridge  
+        
