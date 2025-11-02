@@ -69,4 +69,16 @@ app.MapPut("/Cliente/{id}", async (int id, PharmaContext db, IMapper mapper, Cli
     return raw > 0 ? Results.Ok(cliente) : Results.NoContent();
 });
 
+app.MapDelete("/Cliente/{id}", async (int id, PharmaContext db) =>
+{
+    var cliente = await db.Clientes.FindAsync(id);
+
+    if (cliente is null) return Results.NotFound();
+
+    db.Clientes.Remove(cliente);
+    await db.SaveChangesAsync();
+
+    return Results.NoContent();
+});
+
 app.Run();
