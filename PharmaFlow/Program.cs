@@ -83,4 +83,5 @@ clientes.MapDelete("/{id}", async (int id, PharmaContext db) =>
     return Results.NoContent();
 });
 
+
 app.Run();
