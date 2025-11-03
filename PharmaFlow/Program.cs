@@ -14,10 +14,12 @@ builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies
 var app = builder.Build();
 
 // Endpoints Cliente
+var clientes = app.MapGroup("/Cliente");
 
-app.MapGet("/Cliente", async (PharmaContext db, IMapper mapper, [FromQuery] int page, [FromQuery] int pageSize) =>
+clientes.MapGet("/", async (PharmaContext db, IMapper mapper, [FromQuery] int page, [FromQuery] int pageSize) =>
 {
 
+    page = page < 1 ? 1 : page;
     var totalItems = await db.Clientes.CountAsync();
     var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
@@ -38,7 +40,7 @@ app.MapGet("/Cliente", async (PharmaContext db, IMapper mapper, [FromQuery] int 
     return Results.Ok(result);
 });
 
-app.MapGet("/Cliente/{id}", async (int id, PharmaContext db, IMapper mapper) =>
+clientes.MapGet("/{id}", async (int id, PharmaContext db, IMapper mapper) =>
 {
     return await db.Clientes.FindAsync(id)
         is Cliente cliente
@@ -46,7 +48,7 @@ app.MapGet("/Cliente/{id}", async (int id, PharmaContext db, IMapper mapper) =>
             : Results.NotFound();
 });
 
-app.MapPost("/Cliente", async (PharmaContext db, IMapper mapper, ClienteCreateDto clienteDto) =>
+clientes.MapPost("/", async (PharmaContext db, IMapper mapper, ClienteCreateDto clienteDto) =>
 {
     var cliente = mapper.Map<Cliente>(clienteDto);
     db.Clientes.Add(cliente);
@@ -58,7 +60,7 @@ app.MapPost("/Cliente", async (PharmaContext db, IMapper mapper, ClienteCreateDt
     return Results.NoContent();
 });
 
-app.MapPut("/Cliente/{id}", async (int id, PharmaContext db, IMapper mapper, ClienteUpdateDto clienteDto) =>
+clientes.MapPut("/{id}", async (int id, PharmaContext db, IMapper mapper, ClienteUpdateDto clienteDto) =>
 {
     var cliente = await db.Clientes.FindAsync(id);
     if (cliente is null) return Results.NotFound();
@@ -69,7 +71,7 @@ app.MapPut("/Cliente/{id}", async (int id, PharmaContext db, IMapper mapper, Cli
     return raw > 0 ? Results.Ok(cliente) : Results.NoContent();
 });
 
-app.MapDelete("/Cliente/{id}", async (int id, PharmaContext db) =>
+clientes.MapDelete("/{id}", async (int id, PharmaContext db) =>
 {
     var cliente = await db.Clientes.FindAsync(id);
 

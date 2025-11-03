@@ -9,5 +9,7 @@ public class ClienteProfile : Profile
     public ClienteProfile()
     {
         CreateMap<Cliente, ClienteSearchDto>();
+        CreateMap<ClienteCreateDto, Cliente>();
+        CreateMap<ClienteUpdateDto, Cliente>();
     }
 }
