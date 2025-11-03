@@ -2,7 +2,7 @@
 
 namespace PharmaFlow.Data.Dtos
 {
-    public class CreateItemVendaDto
+    public class ItemVendaCreateDto
     {
         [Required(ErrorMessage ="O campo MedicamentoId é obrigatório.")]
         public int MedicamentoId { get; set; }

@@ -13,8 +13,10 @@ builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies
 
 var app = builder.Build();
 
-// Endpoints Cliente
 var clientes = app.MapGroup("/Cliente");
+
+// Endpoints Cliente
+
 
 clientes.MapGet("/", async (PharmaContext db, IMapper mapper, [FromQuery] int page, [FromQuery] int pageSize) =>
 {
@@ -82,6 +84,5 @@ clientes.MapDelete("/{id}", async (int id, PharmaContext db) =>
 
     return Results.NoContent();
 });
-
 
 app.Run();

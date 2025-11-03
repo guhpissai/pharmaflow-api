@@ -13,5 +13,5 @@ public class VendaCreateDto
 
     [Required(ErrorMessage = "A venda deve conter ao menos um item.")]
     [MinLength(1, ErrorMessage = "A venda deve conter pelo menos um item.")]
-    public ICollection<CreateItemVendaDto> Items { get; set; } = new List<CreateItemVendaDto>();
+    public ICollection<ItemVendaCreateDto> Items { get; set; } = new List<ItemVendaCreateDto>();
 }
