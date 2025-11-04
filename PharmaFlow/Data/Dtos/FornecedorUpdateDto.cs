@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PharmaFlow.Data.Dtos
 {
-    public class FornecedorCreateDto
+    public class FornecedorUpdateDto
     {
         [Required(ErrorMessage = "A razão social do fornecedor é obrigatória.")]
         [StringLength(100, ErrorMessage = "A razão social pode ter no máximo 100 caracteres.")]
