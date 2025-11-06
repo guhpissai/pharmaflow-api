@@ -4,8 +4,21 @@ using Microsoft.EntityFrameworkCore;
 using PharmaFlow.Data;
 using PharmaFlow.Data.Dtos;
 using PharmaFlow.Models;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173") // origem do seu front
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials(); // se precisar enviar cookies ou autenticação
+        });
+});
 
 var connectionString = builder.Configuration.GetConnectionString("PharmaFlowConnection");
 builder.Services.AddDbContext<PharmaContext>(opt => opt.UseSqlServer(connectionString));
@@ -13,34 +26,38 @@ builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies
 
 var app = builder.Build();
 
+app.UseCors("AllowLocalhost");
+
 var clientes = app.MapGroup("/Cliente");
 var fornecedores = app.MapGroup("/Fornecedor");
 
 // Endpoints Cliente
 
 
-clientes.MapGet("/", async (PharmaContext db, IMapper mapper, [FromQuery] int page, [FromQuery] int pageSize) =>
+clientes.MapGet("/", async (PharmaContext db, IMapper mapper, int? page, int? pageSize) =>
 {
+    int currentPage = page.GetValueOrDefault(1);
+    int currentPageSize = pageSize.GetValueOrDefault(10);
 
-    page = page < 1 ? 1 : page;
+    currentPage = currentPage < 1 ? 1 : currentPage;
     var totalItems = await db.Clientes.CountAsync();
-    var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+    var totalPages = (int)Math.Ceiling(totalItems / (double)currentPageSize);
 
     var clientes = await db.Clientes
-    .Skip((page - 1) * pageSize)
-    .Take(pageSize).ToListAsync();
+    .Skip((currentPage - 1) * currentPageSize)
+    .Take(currentPageSize).ToListAsync();
     var clientesDto = mapper.Map<List<ClienteSearchDto>>(clientes);
 
-    var result = new
-    {
-        Page = page,
-        PageSize = pageSize,
-        TotalItems = totalItems,
-        TotalPages = totalPages,
-        Items = clientesDto
-    };
+    //var result = new
+    //{
+    //    Page = currentPage,
+    //    PageSize = currentPageSize,
+    //    TotalItems = totalItems,
+    //    TotalPages = totalPages,
+    //    Items = clientesDto
+    //};
 
-    return Results.Ok(result);
+    return Results.Ok(clientesDto);
 });
 
 clientes.MapGet("/{id}", async (int id, PharmaContext db, IMapper mapper) =>
@@ -88,19 +105,22 @@ clientes.MapDelete("/{id}", async (int id, PharmaContext db) =>
 
 // Endpoints Fornecedor
 
-fornecedores.MapGet("/", async (PharmaContext db, IMapper mapper, [FromQuery] int page, [FromQuery] int pageSize) =>
+fornecedores.MapGet("/", async (PharmaContext db, IMapper mapper, int? page, int? pageSize) =>
 {
-    page = page < 1 ? 1 : page;
+    var currentPage = page.GetValueOrDefault(1);
+    var currentPageSize = page.GetValueOrDefault(10);
+
+    page = currentPage < 1 ? 1 : currentPage;
     var totalItems = await db.Fornecedores.CountAsync();
-    var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+    var totalPages = (int)Math.Ceiling(totalItems / (double)currentPageSize);
     var fornecedores = await db.Fornecedores
-    .Skip((page - 1) * pageSize)
-    .Take(pageSize).ToListAsync();
+    .Skip((currentPage - 1) * currentPageSize)
+    .Take(currentPageSize).ToListAsync();
     var fornecedoresDto = mapper.Map<List<FornecedorSearchDto>>(fornecedores);
     var result = new
     {
-        Page = page,
-        PageSize = pageSize,
+        Page = currentPage,
+        PageSize = currentPageSize,
         TotalItems = totalItems,
         TotalPages = totalPages,
         Items = fornecedoresDto
@@ -149,5 +169,6 @@ fornecedores.MapDelete("/{id}", async (int id, PharmaContext db) =>
 
     return Results.NoContent();
 });
+
 
 app.Run();
