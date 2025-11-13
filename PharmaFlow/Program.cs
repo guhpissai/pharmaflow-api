@@ -13,10 +13,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowLocalhost",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173") // origem do seu front
+            policy.WithOrigins("http://localhost:5173") 
                   .AllowAnyHeader()
                   .AllowAnyMethod()
-                  .AllowCredentials(); // se precisar enviar cookies ou autenticação
+                  .AllowCredentials();
         });
 });
 
@@ -30,9 +30,10 @@ app.UseCors("AllowLocalhost");
 
 var clientes = app.MapGroup("/Cliente");
 var fornecedores = app.MapGroup("/Fornecedor");
+var medicamentos = app.MapGroup("Medicamento");
+var vendas = app.MapGroup("/Venda");
 
-// Endpoints Cliente
-
+#region Rotas de Cliente
 
 clientes.MapGet("/", async (PharmaContext db, IMapper mapper, int? page, int? pageSize) =>
 {
@@ -48,14 +49,14 @@ clientes.MapGet("/", async (PharmaContext db, IMapper mapper, int? page, int? pa
     .Take(currentPageSize).ToListAsync();
     var clientesDto = mapper.Map<List<ClienteSearchDto>>(clientes);
 
-    //var result = new
-    //{
-    //    Page = currentPage,
-    //    PageSize = currentPageSize,
-    //    TotalItems = totalItems,
-    //    TotalPages = totalPages,
-    //    Items = clientesDto
-    //};
+    var result = new
+    {
+        Page = currentPage,
+        PageSize = currentPageSize,
+        TotalItems = totalItems,
+        TotalPages = totalPages,
+        Items = clientesDto
+    };
 
     return Results.Ok(clientesDto);
 });
@@ -103,7 +104,9 @@ clientes.MapDelete("/{id}", async (int id, PharmaContext db) =>
     return Results.NoContent();
 });
 
-// Endpoints Fornecedor
+#endregion
+
+#region Rotas de Fornecedor
 
 fornecedores.MapGet("/", async (PharmaContext db, IMapper mapper, int? page, int? pageSize) =>
 {
@@ -114,6 +117,7 @@ fornecedores.MapGet("/", async (PharmaContext db, IMapper mapper, int? page, int
     var totalItems = await db.Fornecedores.CountAsync();
     var totalPages = (int)Math.Ceiling(totalItems / (double)currentPageSize);
     var fornecedores = await db.Fornecedores
+    .Include(f => f.Medicamentos)
     .Skip((currentPage - 1) * currentPageSize)
     .Take(currentPageSize).ToListAsync();
     var fornecedoresDto = mapper.Map<List<FornecedorSearchDto>>(fornecedores);
@@ -170,5 +174,136 @@ fornecedores.MapDelete("/{id}", async (int id, PharmaContext db) =>
     return Results.NoContent();
 });
 
+#endregion
+
+#region Rotas de Medicamento
+
+medicamentos.MapGet("/", async (PharmaContext db, int? page, int? pageSize, IMapper mapper) =>
+{
+    var currentPage = page.GetValueOrDefault(1);
+    var currentPageSize = pageSize.GetValueOrDefault(10);
+
+    var totalItems = await db.Medicamentos.CountAsync();
+    var totalPages = (int)Math.Ceiling(totalItems / (double)currentPageSize);
+
+    currentPage = currentPage < 1 ? 1 : currentPage;
+
+    var data = await db.Medicamentos
+        .Include(m => m.Fornecedor)
+        .Skip((currentPage - 1) * currentPageSize).Take(currentPageSize).ToListAsync();
+
+    var medicamentos = mapper.Map<List<MedicamentoSearchDto>>(data);
+
+    return Results.Ok(medicamentos);
+});
+
+medicamentos.MapGet("/{id}", async (int id, PharmaContext db, IMapper mapper) =>
+{
+    var medicamento = await db.Medicamentos.FindAsync(id);
+    if (medicamento is null) return Results.NotFound();
+
+    var result = mapper.Map<MedicamentoSearchDto>(medicamento);
+
+    return Results.Ok(result);
+});
+
+medicamentos.MapPost("/", async (PharmaContext db, IMapper mapper, MedicamentoCreateDto dto) =>
+{
+    var medicamento = mapper.Map<Medicamento>(dto);
+    await db.Medicamentos.AddAsync(medicamento);
+    var raw = await db.SaveChangesAsync();
+
+    if (raw > 0) return Results.Created($"Medicamento/{medicamento.Id}", medicamento);
+
+    return Results.NoContent();
+});
+
+medicamentos.MapPut("/", async (int id, PharmaContext db, IMapper mapper, MedicamentoUpdateDto dto) =>
+{
+    var data = await db.Medicamentos.FindAsync(id);
+    if(data is null) return Results.NotFound();
+
+    var medicamento = mapper.Map(dto, data);
+    await db.SaveChangesAsync();
+
+    return Results.NoContent();
+});
+
+medicamentos.MapDelete("/", async (int id, PharmaContext db) =>
+{
+    var medicamento = await db.Medicamentos.FindAsync(id);
+    if (medicamento == null) return Results.NotFound();
+    db.Medicamentos.Remove(medicamento);
+
+    return Results.NoContent();
+});
+
+#endregion
+
+#region Rotas de Venda
+
+vendas.MapGet("/", async (PharmaContext db, int? page, int? pageSize, IMapper mapper) =>
+{
+    var currentPage = page.GetValueOrDefault(1);
+    var currentPageSize = pageSize.GetValueOrDefault(10);
+
+    var totalItems = await db.Vendas.CountAsync();
+    var totalPages = (int)Math.Ceiling(totalItems / (double)currentPageSize);
+
+    currentPage = currentPage < 1 ? 1 : currentPage;
+
+    var vendas = await db.Vendas
+        .Include(v => v.Cliente)
+        .Include(v => v.Items)
+            .ThenInclude(i => i.Medicamento)
+        .Skip((currentPage - 1) * currentPageSize).Take(currentPageSize).ToListAsync();
+
+    var result = mapper.Map<List<VendaSearchDto>>(vendas);
+
+    return Results.Ok(result);
+});
+
+vendas.MapGet("/{id}", async (int id, PharmaContext db, IMapper mapper) =>
+{
+    var venda = await db.Vendas.FindAsync(id);
+    if (venda is null) return Results.NotFound();
+
+    var result = mapper.Map<FornecedorSearchDto>(venda);
+
+    return Results.Ok(result);
+});
+
+vendas.MapPost("/", async (PharmaContext db, IMapper mapper, MedicamentoCreateDto dto) =>
+{
+    var medicamento = mapper.Map<Medicamento>(dto);
+    await db.Medicamentos.AddAsync(medicamento);
+    var raw = await db.SaveChangesAsync();
+
+    if (raw > 0) return Results.Created($"Medicamento/{medicamento.Id}", medicamento);
+
+    return Results.NoContent();
+});
+
+vendas.MapPut("/", async (int id, PharmaContext db, IMapper mapper, VendaUpdateDto dto) =>
+{
+    var data = await db.Vendas.FindAsync(id);
+    if (data is null) return Results.NotFound();
+
+    var venda = mapper.Map(dto, data);
+    await db.SaveChangesAsync();
+
+    return Results.NoContent();
+});
+
+vendas.MapDelete("/", async (int id, PharmaContext db) =>
+{
+    var venda = await db.Vendas.FindAsync(id);
+    if (venda == null) return Results.NotFound();
+    db.Vendas.Remove(venda);
+
+    return Results.NoContent();
+});
+
+#endregion
 
 app.Run();

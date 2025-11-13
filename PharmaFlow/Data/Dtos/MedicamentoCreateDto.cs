@@ -12,7 +12,6 @@ public class MedicamentoCreateDto
 
     [Required(ErrorMessage = "O campo FornecedorId é obrigatório.")]
     public int FornecedorId { get; set; }
-    public Fornecedor Fornecedor { get; set; }
 
     [Required]
     [Range(0.01, double.MaxValue, ErrorMessage = "O preço deve ser maior que zero.")]

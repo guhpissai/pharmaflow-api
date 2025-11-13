@@ -9,5 +9,7 @@ public class ItemVendaProfile : Profile
     public ItemVendaProfile()
     {
         CreateMap<ItemVendaCreateDto, ItemVenda>();
+        CreateMap<ItemVenda, ItemVendaSearchDto>()
+            .ForMember(dest => dest.MedicamentoNome, opt => opt.MapFrom(m => m.Medicamento));
     }
 }
